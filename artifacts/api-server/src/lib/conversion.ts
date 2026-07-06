@@ -31,6 +31,48 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
   }
 }
 
+const UNICODE_REPLACEMENTS: Record<string, string> = {
+  "\u2192": "->",
+  "\u2190": "<-",
+  "\u2194": "<->",
+  "\u2013": "-",
+  "\u2014": "-",
+  "\u2018": "'",
+  "\u2019": "'",
+  "\u201C": '"',
+  "\u201D": '"',
+  "\u2026": "...",
+  "\u00A0": " ",
+  "\u2022": "*",
+  "\u201E": '"',
+  "\u2039": "<",
+  "\u203A": ">",
+  "\u02C6": "^",
+  "\u02DC": "~",
+  "\u2002": " ",
+  "\u2003": " ",
+  "\u2009": " ",
+};
+
+function sanitizeWinAnsi(text: string): string {
+  // Replace known common Unicode characters with ASCII equivalents
+  let out = text;
+  for (const [u, r] of Object.entries(UNICODE_REPLACEMENTS)) {
+    out = out.split(u).join(r);
+  }
+  // Drop any remaining characters outside basic Latin + Latin-1 supplement
+  // that WinAnsi still cannot encode (rough filter: codepoint > 255)
+  out = out
+    .split("")
+    .map((ch) => {
+      const cp = ch.codePointAt(0) ?? 0;
+      if (cp > 255) return "";
+      return ch;
+    })
+    .join("");
+  return out;
+}
+
 function wrapText(text: string, font: any, fontSize: number, maxWidth: number): string[] {
   const lines: string[] = [];
   for (const paragraph of text.split("\n")) {
@@ -64,7 +106,8 @@ async function textToPdf(text: string): Promise<Buffer> {
   const margin = 50;
   const maxWidth = pageWidth - margin * 2;
 
-  const lines = wrapText(text || " ", font, fontSize, maxWidth);
+  const cleanText = sanitizeWinAnsi(text || " ");
+  const lines = wrapText(cleanText, font, fontSize, maxWidth);
 
   let page = doc.addPage([pageWidth, pageHeight]);
   let y = pageHeight - margin;
@@ -83,7 +126,7 @@ async function textToPdf(text: string): Promise<Buffer> {
 
 async function docxToPdf(file: ConvertedFile): Promise<ConvertedFile> {
   const { value: text } = await mammoth.extractRawText({ buffer: file.buffer });
-  const pdfBuffer = await textToPdf(text);
+  const pdfBuffer = await textToPdf(sanitizeWinAnsi(text));
   return { fileName: `${baseName(file.fileName)}.pdf`, mimeType: "application/pdf", buffer: pdfBuffer };
 }
 

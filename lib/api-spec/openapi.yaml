@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SmartConvert API - file conversion, compression, adaptive compression and benchmarking
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: convert
+    description: File conversion
+  - name: compress
+    description: File compression
+  - name: files
+    description: File downloads
+  - name: history
+    description: Operation history
 paths:
   /healthz:
     get:
@@ -24,6 +32,176 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /convert:
+    post:
+      operationId: convertFiles
+      tags: [convert]
+      summary: Convert one or more files to a target format
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/ConversionInput"
+      responses:
+        "201":
+          description: Conversion completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConversionResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /compress:
+    post:
+      operationId: compressFiles
+      tags: [compress]
+      summary: Compress one or more files with a chosen algorithm
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/CompressionInput"
+      responses:
+        "201":
+          description: Compression completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompressionResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /compress/adaptive:
+    post:
+      operationId: adaptiveCompress
+      tags: [compress]
+      summary: Analyze a file and choose the best compression algorithm automatically
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/AdaptiveCompressionInput"
+      responses:
+        "201":
+          description: Adaptive compression completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdaptiveCompressionResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /compress/benchmark:
+    post:
+      operationId: benchmarkCompress
+      tags: [compress]
+      summary: Run multiple compression algorithms against a file and compare results
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/BenchmarkInput"
+      responses:
+        "201":
+          description: Benchmark completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BenchmarkResult"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /files/{id}:
+    get:
+      operationId: downloadFile
+      tags: [files]
+      summary: Download a result file by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File contents
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /history:
+    get:
+      operationId: listHistory
+      tags: [history]
+      summary: List recent conversion/compression operations
+      responses:
+        "200":
+          description: History entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryEntry"
+    delete:
+      operationId: clearHistory
+      tags: [history]
+      summary: Clear all history entries
+      responses:
+        "204":
+          description: Cleared
+
+  /history/{id}:
+    delete:
+      operationId: deleteHistoryEntry
+      tags: [history]
+      summary: Delete a single history entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +212,304 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    ConversionType:
+      type: string
+      enum:
+        - docx-to-pdf
+        - pdf-to-docx
+        - pdf-to-txt
+        - pdf-to-markdown
+        - images-to-pdf
+        - pdf-to-images
+
+    ConversionInput:
+      type: object
+      required: [files, conversionType]
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+        conversionType:
+          $ref: "#/components/schemas/ConversionType"
+
+    ConversionOutputFile:
+      type: object
+      required: [id, fileName, fileSize, downloadUrl]
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        fileSize:
+          type: integer
+        downloadUrl:
+          type: string
+
+    ConversionResult:
+      type: object
+      required:
+        - id
+        - conversionType
+        - sourceFileNames
+        - outputs
+        - createdAt
+      properties:
+        id:
+          type: string
+        conversionType:
+          $ref: "#/components/schemas/ConversionType"
+        sourceFileNames:
+          type: array
+          items:
+            type: string
+        outputs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConversionOutputFile"
+        warning:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    CompressionAlgorithm:
+      type: string
+      enum:
+        - zip
+        - gzip
+        - bzip2
+        - lzma
+        - brotli
+        - zstd
+        - lz4
+        - snappy
+
+    CompressionInput:
+      type: object
+      required: [files, algorithm]
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+        algorithm:
+          $ref: "#/components/schemas/CompressionAlgorithm"
+
+    CompressionResult:
+      type: object
+      required:
+        - id
+        - fileName
+        - algorithm
+        - originalSize
+        - compressedSize
+        - compressionRatio
+        - compressionTimeMs
+        - decompressionTimeMs
+        - compressionSpeedMBps
+        - downloadUrl
+        - createdAt
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        algorithm:
+          $ref: "#/components/schemas/CompressionAlgorithm"
+        originalSize:
+          type: integer
+        compressedSize:
+          type: integer
+        compressionRatio:
+          type: number
+        compressionTimeMs:
+          type: number
+        decompressionTimeMs:
+          type: number
+        compressionSpeedMBps:
+          type: number
+        downloadUrl:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    AdaptiveCompressionInput:
+      type: object
+      required: [files]
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+
+    FileAnalysis:
+      type: object
+      required:
+        - mimeType
+        - isText
+        - entropy
+        - alreadyCompressed
+        - repetitionScore
+        - avgLineLength
+      properties:
+        mimeType:
+          type: string
+        isText:
+          type: boolean
+        entropy:
+          type: number
+        alreadyCompressed:
+          type: boolean
+        repetitionScore:
+          type: number
+        avgLineLength:
+          type: ["number", "null"]
+
+    AdaptiveCompressionResult:
+      type: object
+      required:
+        - id
+        - fileName
+        - algorithm
+        - originalSize
+        - compressedSize
+        - compressionRatio
+        - compressionTimeMs
+        - decompressionTimeMs
+        - compressionSpeedMBps
+        - downloadUrl
+        - analysis
+        - reasons
+        - createdAt
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        algorithm:
+          $ref: "#/components/schemas/CompressionAlgorithm"
+        originalSize:
+          type: integer
+        compressedSize:
+          type: integer
+        compressionRatio:
+          type: number
+        compressionTimeMs:
+          type: number
+        decompressionTimeMs:
+          type: number
+        compressionSpeedMBps:
+          type: number
+        downloadUrl:
+          type: string
+        analysis:
+          $ref: "#/components/schemas/FileAnalysis"
+        reasons:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    BenchmarkInput:
+      type: object
+      required: [files, algorithms]
+      properties:
+        files:
+          type: array
+          items:
+            type: string
+            format: binary
+        algorithms:
+          type: string
+          description: Comma-separated list of CompressionAlgorithm values
+
+    BenchmarkEntry:
+      type: object
+      required:
+        - algorithm
+        - compressedSize
+        - compressionRatio
+        - compressionTimeMs
+        - decompressionTimeMs
+        - memoryUsageKb
+      properties:
+        algorithm:
+          $ref: "#/components/schemas/CompressionAlgorithm"
+        compressedSize:
+          type: integer
+        compressionRatio:
+          type: number
+        compressionTimeMs:
+          type: number
+        decompressionTimeMs:
+          type: number
+        memoryUsageKb:
+          type: ["number", "null"]
+
+    BenchmarkResult:
+      type: object
+      required:
+        - id
+        - fileName
+        - originalSize
+        - entries
+        - bestAlgorithm
+        - createdAt
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        originalSize:
+          type: integer
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/BenchmarkEntry"
+        bestAlgorithm:
+          $ref: "#/components/schemas/CompressionAlgorithm"
+        createdAt:
+          type: string
+          format: date-time
+
+    HistoryEntryType:
+      type: string
+      enum:
+        - convert
+        - compress
+        - adaptive
+        - benchmark
+
+    HistoryEntry:
+      type: object
+      required:
+        - id
+        - type
+        - summary
+        - createdAt
+      properties:
+        id:
+          type: string
+        type:
+          $ref: "#/components/schemas/HistoryEntryType"
+        summary:
+          type: string
+        detail:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time

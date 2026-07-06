@@ -1,0 +1,1 @@
+- [esbuild bundling PDF/compression libs](esbuild-native-pdf-libs.md) — pdf-parse, pdfjs-dist, compressjs-style libs must be added to esbuild `external` list in api-server build.mjs, or runtime breaks with cryptic errors.

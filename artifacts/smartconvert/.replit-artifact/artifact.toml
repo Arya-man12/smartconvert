@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SmartConvert"
+version = "1.0.0"
+id = "artifacts/smartconvert"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20597
+
+[services.development]
+run = "pnpm --filter @workspace/smartconvert run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smartconvert", "run", "build" ]
+publicDir = "artifacts/smartconvert/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20597"
+BASE_PATH = "/"

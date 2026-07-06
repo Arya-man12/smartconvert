@@ -1,0 +1,195 @@
+Build a full-stack web application called **SmartConvert**.
+
+The application should have a modern, responsive UI with React (Vite + TypeScript + Tailwind CSS) and a FastAPI backend written in Python.
+
+## Features
+
+### 1. File Conversion
+
+Implement the following conversions:
+
+* DOCX → PDF
+* PDF → DOCX
+* PDF → TXT
+* PDF → Markdown
+* Images (PNG/JPG) → PDF
+* PDF → Images
+
+All conversions should preserve formatting as much as possible.
+
+---
+
+### 2. File Compression
+
+Allow users to upload one or multiple files.
+
+Provide a dropdown to choose one of the following algorithms:
+
+* ZIP (DEFLATE)
+* Gzip
+* Bzip2
+* LZMA
+* Brotli
+* Zstandard
+* LZ4
+* Snappy
+
+Implement each compression algorithm using the appropriate Python library.
+
+After compression, display:
+
+* Original size
+* Compressed size
+* Compression ratio
+* Compression time
+* Decompression time
+* Compression speed
+* Algorithm used
+
+Allow users to download the compressed file.
+
+---
+
+### 3. Adaptive Compression
+
+Implement an Adaptive Compression option.
+
+This should not use machine learning initially.
+
+Instead:
+
+* Analyze uploaded files.
+* Detect MIME type.
+* Detect text vs binary.
+* Estimate entropy.
+* Detect already compressed formats.
+* Estimate repetition.
+* Estimate average line length for text.
+
+Choose the most appropriate algorithm using heuristics.
+
+Provide a "Why this algorithm?" panel explaining every decision.
+
+Example:
+
+Selected Algorithm:
+Zstandard
+
+Reason:
+
+* Text file detected
+* Moderate entropy
+* Large repeated sequences
+* Fast decompression preferred
+
+---
+
+### 4. Benchmark Mode
+
+Allow users to select multiple algorithms simultaneously.
+
+Run every selected algorithm.
+
+Display results in a sortable comparison table showing:
+
+* Algorithm
+* Compression ratio
+* Compression time
+* Decompression time
+* Memory usage (if measurable)
+* Final size
+
+Highlight the best performer.
+
+---
+
+### 5. API
+
+Implement REST APIs with FastAPI.
+
+Use:
+
+* Pydantic models
+* Async endpoints
+* Proper error handling
+* Swagger/OpenAPI documentation
+* Background tasks where appropriate
+
+---
+
+### 6. Architecture
+
+Organize the backend into:
+
+app/
+api/
+services/
+compression/
+conversion/
+utils/
+models/
+schemas/
+
+Frontend should use:
+
+src/
+components/
+pages/
+hooks/
+api/
+utils/
+
+---
+
+### 7. Quality
+
+Requirements:
+
+* Type hints everywhere
+* Logging
+* Configuration using environment variables
+* Docker support
+* Docker Compose
+* Unit tests with pytest
+* Frontend tests using Vitest
+* CORS enabled
+* File size limits
+* Temporary upload cleanup
+* Progress bars for uploads
+
+---
+
+### 8. UI
+
+Create a clean dashboard.
+
+Sidebar:
+
+* Convert
+* Compress
+* Benchmark
+* History
+* Settings
+
+Show drag-and-drop upload.
+
+Show progress indicators.
+
+Display benchmark charts using Chart.js.
+
+Support dark mode.
+
+---
+
+### 9. Future Expansion
+
+Design the project so future modules can be added without restructuring:
+
+* OCR
+* AI document summarization
+* AI-based adaptive compression
+* Cloud storage integrations
+* Batch processing
+* Archive explorer
+
+Keep the code modular and production-ready.
